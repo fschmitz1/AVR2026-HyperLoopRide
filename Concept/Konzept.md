@@ -301,9 +301,9 @@ Das Minimalziel des Projekts ist ein funktionsfähiger VR-Prototyp mit den wicht
 
 | GitHub-ID | Aufgabenbereich |
 |---|---|
-| `lydiab17` | Stationsdesign, Umgebungsdesign, UI-Konzept, VR-Interaktion Station,  Audiofeedback Station  |
-| `fschmitz1` | Kapseldesign, VR-Interaktion Kapsel, Joystick-Steuerung, Audiofeedback Kapsel, Streckenlogik|
-| `lydiab17` & `fschmitz1` | Interaktionsabläufe Station, Schleusenkonzept, transparente Röhre, Landschaft, VR-Movement, Infotafeln |
+| `lydiab17 (145366362)` | Stationsdesign, Umgebungsdesign, UI-Konzept, VR-Interaktion Station,  Audiofeedback Station  |
+| `fschmitz1 (158757822)` | Kapseldesign, VR-Interaktion Kapsel, Joystick-Steuerung, Audiofeedback Kapsel, Streckenlogik|
+| `lydiab17 (145366362)` & `fschmitz1 (158757822)` | Interaktionsabläufe Station, Schleusenkonzept, transparente Röhre, Landschaft, VR-Movement, Infotafeln |
 
 ---
 
@@ -313,11 +313,11 @@ Der Projektzeitraum beginnt am **10.05.2026** und endet am **05.07.2026**.
 
 | Zeitraum | Phase | Aufgaben | Verantwortung |
 |---|---|---|---|
-| 11.05.2026 – 17.05.2026 | Grundaufbau der VR-Umgebung | Aufbau des Unity-Projekts, Einrichtung des VR-Movements, erste Blockouts für Station, Kapsel und Röhrenstrecke | `lydiab17` & `fschmitz1` |
-| 18.05.2026 – 06.06.2026 | Station und Einstieg | Umsetzung des Stationsdesigns, Docking-Bereichs, erster UI-Elemente, Türen und grundlegender Interaktionen in der Station | `lydiab17` |
-| 18.05.2026 – 06.06.2026 | Kapsel und Steuerung | Umsetzung des Kapseldesigns, Innenraums, Sitzbereichs, Joysticks und erster Geschwindigkeitssteuerung | `fschmitz1` |
-| 07.06.2026 – 13.06.2026 | Schleuse, Strecke und Fahrmechanik | Integration des Schleusenkonzepts, Bewegung der Kapsel entlang der Strecke, transparente Röhre, Streckenlogik und Abzweigungen | `lydiab17` & `fschmitz1` |
-| 14.06.2026 – 20.06.2026 | Audio, UI und Informationssysteme | Einbau von Audiofeedback für Station und Kapsel, Statusanzeigen, Infotafeln, visuellen Rückmeldungen und Landschaft außerhalb der Röhre | `lydiab17` & `fschmitz1` |
-| 21.06.2026 – 27.06.2026 | Integration, Testing und Feinschliff | Zusammenführung aller Komponenten, Testen der Interaktionen, Fehlerbehebung, Optimierung der VR-Nutzung und Vorbereitung der Präsentation | `lydiab17` & `fschmitz1` |
-| 28.06.2026 - 05.07.2026| Puffer | Puffer | `lydiab17` & `fschmitz1` |
+| 11.05.2026 – 17.05.2026 | Grundaufbau der VR-Umgebung | Aufbau des Unity-Projekts, Einrichtung des VR-Movements, erste Blockouts für Station, Kapsel und Röhrenstrecke | `lydiab17 (145366362)` & `fschmitz1 (158757822)` |
+| 18.05.2026 – 06.06.2026 | Station und Einstieg | Umsetzung des Stationsdesigns, Docking-Bereichs, erster UI-Elemente, Türen und grundlegender Interaktionen in der Station | `lydiab17 (145366362)` |
+| 18.05.2026 – 06.06.2026 | Kapsel und Steuerung | Umsetzung des Kapseldesigns, Innenraums, Sitzbereichs, Joysticks und erster Geschwindigkeitssteuerung | `fschmitz1 (158757822)` |
+| 07.06.2026 – 13.06.2026 | Schleuse, Strecke und Fahrmechanik | Integration des Schleusenkonzepts, Bewegung der Kapsel entlang der Strecke, transparente Röhre, Streckenlogik und Abzweigungen | `lydiab17 (145366362)` & `fschmitz1 (158757822)` |
+| 14.06.2026 – 20.06.2026 | Audio, UI und Informationssysteme | Einbau von Audiofeedback für Station und Kapsel, Statusanzeigen, Infotafeln, visuellen Rückmeldungen und Landschaft außerhalb der Röhre | `lydiab17 (145366362)` & `fschmitz1 (158757822)` |
+| 21.06.2026 – 27.06.2026 | Integration, Testing und Feinschliff | Zusammenführung aller Komponenten, Testen der Interaktionen, Fehlerbehebung, Optimierung der VR-Nutzung und Vorbereitung der Präsentation | `lydiab17 (145366362)` & `fschmitz1 (158757822)` |
+| 28.06.2026 - 05.07.2026| Puffer | Puffer | `lydiab17 (145366362)` & `fschmitz1 (158757822)` |
 ---
