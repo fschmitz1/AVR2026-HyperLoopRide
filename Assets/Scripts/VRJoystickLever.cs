@@ -100,8 +100,10 @@ public class VRJoystickLever : MonoBehaviour
 
     private void Update()
     {
+        
         UpdateLever();
         UpdateButton();
+
     }
 
     private void UpdateLever()
