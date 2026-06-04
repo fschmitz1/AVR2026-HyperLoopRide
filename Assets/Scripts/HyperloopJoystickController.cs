@@ -24,9 +24,13 @@ public class HyperloopJoystickController : MonoBehaviour
     public float joystickForwardThreshold = 0.7f;
     public float requiredForwardHoldTime = 3f;
     public bool waitingForJoystickForward;
-    public bool boostReadyToLaunch;
     public bool boostLaunchConfirmed;
     public float forwardHoldTimer;
+
+    [Header("Boost Countdown Lights")]
+    public GameObject countdownLight1;
+    public GameObject countdownLight2;
+    public GameObject countdownLight3;
 
     [Header("Cruise Control")]
     public bool cruiseControlEnabled;
@@ -51,6 +55,11 @@ public class HyperloopJoystickController : MonoBehaviour
 
     private bool wasCruiseButtonPressed;
 
+    private void Start()
+    {
+        SetCountdownLights(false, false, false);
+    }
+
     private void LateUpdate()
     {
         if (joystick == null)
@@ -71,9 +80,12 @@ public class HyperloopJoystickController : MonoBehaviour
         if (boostModeActive && !boostLaunchConfirmed)
         {
             HandleBoostStartSequence(input);
+            UpdateCountdownLights();
             SlowDownWhileWaiting();
             return;
         }
+
+        UpdateCountdownLights();
 
         float activeMaxSpeed = boostModeActive ? maxSpeed * boostMultiplier : maxSpeed;
         float activeAcceleration = boostModeActive ? acceleration * boostMultiplier : acceleration;
@@ -116,25 +128,13 @@ public class HyperloopJoystickController : MonoBehaviour
             return;
         }
 
-        if (boostModeActive && boostReadyToLaunch && !boostLaunchConfirmed)
-        {
-            ConfirmBoostLaunch();
-            return;
-        }
-
-        if (boostModeActive && boostLaunchConfirmed)
-        {
-            DeactivateBoostMode();
-            return;
-        }
+        DeactivateBoostMode();
     }
 
     private void ActivateBoostMode()
     {
         boostModeActive = true;
-
         waitingForJoystickForward = true;
-        boostReadyToLaunch = false;
         boostLaunchConfirmed = false;
         forwardHoldTimer = 0f;
 
@@ -142,26 +142,31 @@ public class HyperloopJoystickController : MonoBehaviour
         cruiseSpeed = 0f;
 
         currentSpeed = 0f;
+        currentTargetSpeed = 0f;
+
+        SetCountdownLights(false, false, false);
     }
 
     private void ConfirmBoostLaunch()
     {
         boostLaunchConfirmed = true;
         waitingForJoystickForward = false;
-        boostReadyToLaunch = false;
+        forwardHoldTimer = requiredForwardHoldTime;
+
+        SetCountdownLights(false, false, true);
     }
 
     private void DeactivateBoostMode()
     {
         boostModeActive = false;
-
         waitingForJoystickForward = false;
-        boostReadyToLaunch = false;
         boostLaunchConfirmed = false;
         forwardHoldTimer = 0f;
 
         cruiseControlEnabled = false;
         cruiseSpeed = 0f;
+
+        SetCountdownLights(false, false, false);
     }
 
     private void HandleBoostStartSequence(float input)
@@ -169,20 +174,52 @@ public class HyperloopJoystickController : MonoBehaviour
         if (!waitingForJoystickForward)
             return;
 
-        if (input >= joystickForwardThreshold)
+        if (Mathf.Abs(input) >= joystickForwardThreshold)
         {
             forwardHoldTimer += Time.deltaTime;
 
             if (forwardHoldTimer >= requiredForwardHoldTime)
             {
-                boostReadyToLaunch = true;
-                waitingForJoystickForward = false;
+                ConfirmBoostLaunch();
             }
         }
         else
         {
             forwardHoldTimer = 0f;
         }
+    }
+
+    private void UpdateCountdownLights()
+    {
+        if (!boostModeActive)
+        {
+            SetCountdownLights(false, false, false);
+            return;
+        }
+
+        if (boostLaunchConfirmed)
+        {
+            SetCountdownLights(false, false, true);
+            return;
+        }
+
+        bool light1On = forwardHoldTimer >= 1f;
+        bool light2On = forwardHoldTimer >= 2f;
+        bool light3On = forwardHoldTimer >= 3f;
+
+        SetCountdownLights(light1On, light2On, light3On);
+    }
+
+    private void SetCountdownLights(bool light1, bool light2, bool light3)
+    {
+        if (countdownLight1 != null)
+            countdownLight1.SetActive(light1);
+
+        if (countdownLight2 != null)
+            countdownLight2.SetActive(light2);
+
+        if (countdownLight3 != null)
+            countdownLight3.SetActive(light3);
     }
 
     private void SlowDownWhileWaiting()
