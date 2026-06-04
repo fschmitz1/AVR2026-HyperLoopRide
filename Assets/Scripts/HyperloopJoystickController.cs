@@ -9,14 +9,24 @@ public class HyperloopJoystickController : MonoBehaviour
     public Transform xrOrigin;
     public Transform playerHead;
 
-    [Header("Movement")]
+    [Header("Normal Movement")]
     public Vector3 localMoveDirection = Vector3.forward;
     public float maxSpeed = 8f;
-    public bool invertInput = true;
-
-    [Header("Acceleration")]
     public float acceleration = 2f;
     public float deceleration = 4f;
+    public bool invertInput = true;
+
+    [Header("Boost Movement")]
+    public bool boostModeActive;
+    public float boostMultiplier = 10f;
+
+    [Header("Boost Start Sequence")]
+    public float joystickForwardThreshold = 0.7f;
+    public float requiredForwardHoldTime = 3f;
+    public bool waitingForJoystickForward;
+    public bool boostReadyToLaunch;
+    public bool boostLaunchConfirmed;
+    public float forwardHoldTimer;
 
     [Header("Cruise Control")]
     public bool cruiseControlEnabled;
@@ -36,6 +46,8 @@ public class HyperloopJoystickController : MonoBehaviour
 
     [Header("Debug")]
     public float currentSpeed;
+    public float currentInput;
+    public float currentTargetSpeed;
 
     private bool wasCruiseButtonPressed;
 
@@ -43,8 +55,6 @@ public class HyperloopJoystickController : MonoBehaviour
     {
         if (joystick == null)
             return;
-
-        HandleCruiseControlButton();
 
         float input = joystick.value;
 
@@ -54,15 +64,32 @@ public class HyperloopJoystickController : MonoBehaviour
         if (Mathf.Abs(input) < deadzone)
             input = 0f;
 
-        float joystickTargetSpeed = input * maxSpeed;
+        currentInput = input;
+
+        HandleCruiseControlButton();
+
+        if (boostModeActive && !boostLaunchConfirmed)
+        {
+            HandleBoostStartSequence(input);
+            SlowDownWhileWaiting();
+            return;
+        }
+
+        float activeMaxSpeed = boostModeActive ? maxSpeed * boostMultiplier : maxSpeed;
+        float activeAcceleration = boostModeActive ? acceleration * boostMultiplier : acceleration;
+        float activeDeceleration = boostModeActive ? deceleration * boostMultiplier : deceleration;
+
+        float joystickTargetSpeed = input * activeMaxSpeed;
 
         float targetSpeed = cruiseControlEnabled
             ? cruiseSpeed
             : joystickTargetSpeed;
 
+        currentTargetSpeed = targetSpeed;
+
         float speedChangeRate = Mathf.Abs(targetSpeed) > Mathf.Abs(currentSpeed)
-            ? acceleration
-            : deceleration;
+            ? activeAcceleration
+            : activeDeceleration;
 
         currentSpeed = Mathf.MoveTowards(
             currentSpeed,
@@ -81,8 +108,109 @@ public class HyperloopJoystickController : MonoBehaviour
         MoveHyperloop(movement);
     }
 
+    public void PowerButtonPressed()
+    {
+        if (!boostModeActive)
+        {
+            ActivateBoostMode();
+            return;
+        }
+
+        if (boostModeActive && boostReadyToLaunch && !boostLaunchConfirmed)
+        {
+            ConfirmBoostLaunch();
+            return;
+        }
+
+        if (boostModeActive && boostLaunchConfirmed)
+        {
+            DeactivateBoostMode();
+            return;
+        }
+    }
+
+    private void ActivateBoostMode()
+    {
+        boostModeActive = true;
+
+        waitingForJoystickForward = true;
+        boostReadyToLaunch = false;
+        boostLaunchConfirmed = false;
+        forwardHoldTimer = 0f;
+
+        cruiseControlEnabled = false;
+        cruiseSpeed = 0f;
+
+        currentSpeed = 0f;
+    }
+
+    private void ConfirmBoostLaunch()
+    {
+        boostLaunchConfirmed = true;
+        waitingForJoystickForward = false;
+        boostReadyToLaunch = false;
+    }
+
+    private void DeactivateBoostMode()
+    {
+        boostModeActive = false;
+
+        waitingForJoystickForward = false;
+        boostReadyToLaunch = false;
+        boostLaunchConfirmed = false;
+        forwardHoldTimer = 0f;
+
+        cruiseControlEnabled = false;
+        cruiseSpeed = 0f;
+    }
+
+    private void HandleBoostStartSequence(float input)
+    {
+        if (!waitingForJoystickForward)
+            return;
+
+        if (input >= joystickForwardThreshold)
+        {
+            forwardHoldTimer += Time.deltaTime;
+
+            if (forwardHoldTimer >= requiredForwardHoldTime)
+            {
+                boostReadyToLaunch = true;
+                waitingForJoystickForward = false;
+            }
+        }
+        else
+        {
+            forwardHoldTimer = 0f;
+        }
+    }
+
+    private void SlowDownWhileWaiting()
+    {
+        currentTargetSpeed = 0f;
+
+        currentSpeed = Mathf.MoveTowards(
+            currentSpeed,
+            0f,
+            deceleration * Time.deltaTime
+        );
+
+        if (Mathf.Approximately(currentSpeed, 0f))
+            return;
+
+        Vector3 movement =
+            transform.TransformDirection(localMoveDirection.normalized)
+            * currentSpeed
+            * Time.deltaTime;
+
+        MoveHyperloop(movement);
+    }
+
     private void HandleCruiseControlButton()
     {
+        if (boostModeActive)
+            return;
+
         bool cruiseButtonPressed = joystick.buttonPressed;
 
         if (cruiseButtonPressed && !wasCruiseButtonPressed)
