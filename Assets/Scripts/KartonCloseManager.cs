@@ -6,6 +6,9 @@ public class KartonCloseManager : MonoBehaviour
     [Header("Opened Box")]
     [SerializeField] private GameObject openedBoxObject;
 
+    [Header("Also Disable On Close")]
+    [SerializeField] private GameObject additionalObjectToDisable;
+
     [Header("Closed Box Replacement")]
     [SerializeField] private GameObject closedBoxObject;
     [SerializeField] private Rigidbody closedBoxRigidbody;
@@ -116,7 +119,6 @@ public class KartonCloseManager : MonoBehaviour
             return;
         }
 
-        // Geschlossene Box an exakt dieselbe Stelle setzen.
         closedBoxObject.transform.SetPositionAndRotation(
             openedBoxObject.transform.position,
             openedBoxObject.transform.rotation
@@ -124,7 +126,6 @@ public class KartonCloseManager : MonoBehaviour
 
         closedBoxObject.transform.localScale = openedBoxObject.transform.localScale;
 
-        // Closed Box aktivieren.
         closedBoxObject.SetActive(true);
 
         if (!closedBoxRigidbody)
@@ -155,9 +156,13 @@ public class KartonCloseManager : MonoBehaviour
             closedBoxGrabInteractable.enabled = true;
         }
 
-        // Offene Box deaktivieren.
+        if (additionalObjectToDisable)
+        {
+            additionalObjectToDisable.SetActive(false);
+        }
+
         openedBoxObject.SetActive(false);
 
-        Debug.Log("Offener Karton wurde durch geschlossenen Karton ersetzt.");
+        Debug.Log("Offener Karton wurde durch geschlossenen Karton ersetzt. Zusätzliches Objekt wurde deaktiviert.");
     }
 }
