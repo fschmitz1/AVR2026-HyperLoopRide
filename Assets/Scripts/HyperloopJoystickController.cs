@@ -272,6 +272,8 @@ public class HyperloopJoystickController : MonoBehaviour
 
     private void MoveHyperloop(Vector3 movement)
     {
+        bool playerWasInside = ShouldMovePlayer();
+
         Vector3[] oldRigidbodyWorldPositions = new Vector3[carriedRigidbodies.Length];
 
         for (int i = 0; i < carriedRigidbodies.Length; i++)
@@ -295,7 +297,7 @@ public class HyperloopJoystickController : MonoBehaviour
             rb.transform.position = targetWorldPosition;
         }
 
-        if (ShouldMovePlayer())
+        if (playerWasInside && xrOrigin != null)
         {
             xrOrigin.position += movement;
         }
