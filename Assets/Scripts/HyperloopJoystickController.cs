@@ -20,6 +20,12 @@ public class HyperloopJoystickController : MonoBehaviour
     public bool boostModeActive;
     public float boostMultiplier = 10f;
 
+    [Header("Emergency Brake")]
+    public bool emergencyBraking;
+    public float emergencyBrakeDuration = 1f;
+    public float emergencyBrakeTimer;
+    private float emergencyBrakeStartSpeed;
+
     [Header("Boost Start Sequence")]
     public float joystickForwardThreshold = 0.7f;
     public float requiredForwardHoldTime = 3f;
@@ -62,6 +68,12 @@ public class HyperloopJoystickController : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (emergencyBraking)
+        {
+            UpdateEmergencyBrake();
+            return;
+        }
+
         if (joystick == null)
             return;
 
@@ -122,13 +134,68 @@ public class HyperloopJoystickController : MonoBehaviour
 
     public void PowerButtonPressed()
     {
-        if (!boostModeActive)
+        if (emergencyBraking)
+            return;
+
+        if (boostModeActive)
         {
-            ActivateBoostMode();
+            if (Mathf.Abs(currentSpeed) > 0.01f)
+            {
+                StartEmergencyBrake();
+                return;
+            }
+
+            DeactivateBoostMode();
             return;
         }
 
-        DeactivateBoostMode();
+        ActivateBoostMode();
+    }
+
+    private void StartEmergencyBrake()
+    {
+        emergencyBraking = true;
+        emergencyBrakeTimer = 0f;
+        emergencyBrakeStartSpeed = currentSpeed;
+
+        boostModeActive = false;
+        waitingForJoystickForward = false;
+        boostLaunchConfirmed = false;
+        forwardHoldTimer = 0f;
+
+        cruiseControlEnabled = false;
+        cruiseSpeed = 0f;
+        currentTargetSpeed = 0f;
+
+        SetCountdownLights(false, false, false);
+    }
+
+    private void UpdateEmergencyBrake()
+    {
+        emergencyBrakeTimer += Time.deltaTime;
+
+        float duration = Mathf.Max(0.01f, emergencyBrakeDuration);
+        float t = Mathf.Clamp01(emergencyBrakeTimer / duration);
+
+        currentSpeed = Mathf.Lerp(emergencyBrakeStartSpeed, 0f, t);
+        currentTargetSpeed = 0f;
+
+        if (!Mathf.Approximately(currentSpeed, 0f))
+        {
+            Vector3 movement =
+                transform.TransformDirection(localMoveDirection.normalized)
+                * currentSpeed
+                * Time.deltaTime;
+
+            MoveHyperloop(movement);
+        }
+
+        if (t >= 1f)
+        {
+            currentSpeed = 0f;
+            currentTargetSpeed = 0f;
+            emergencyBraking = false;
+        }
     }
 
     private void ActivateBoostMode()
