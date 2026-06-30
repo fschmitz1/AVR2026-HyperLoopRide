@@ -47,6 +47,21 @@ public class HyperloopJoystickController : MonoBehaviour
     public bool onlyMovePlayerWhenInside = true;
     public BoxCollider rideArea;
 
+    [Header("Station Auto Stop")]
+    public bool stationAutoStopEnabled = true;
+    public Transform stationStopTarget;
+
+    [Tooltip("Radius um das Stop-Target. Bei hoher Geschwindigkeit lieber 10-20 nehmen.")]
+    public float stationStopRadius = 10f;
+
+    [Tooltip("Wenn aktiv, springt der Hyperloop exakt auf die Target-Position.")]
+    public bool snapToStationStopTarget = true;
+
+    [Tooltip("Wenn aktiv, kann der Hyperloop nach Erreichen der Station nicht versehentlich weiterfahren.")]
+    public bool lockMovementAfterStationStop = true;
+
+    public bool stationStopReached;
+
     [Header("Objects With Rigidbody That Must Ride Along")]
     public Rigidbody[] carriedRigidbodies;
 
@@ -58,6 +73,7 @@ public class HyperloopJoystickController : MonoBehaviour
     public float currentSpeed;
     public float currentInput;
     public float currentTargetSpeed;
+    public float distanceToStationStopTarget;
 
     private bool wasCruiseButtonPressed;
 
@@ -68,6 +84,14 @@ public class HyperloopJoystickController : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (stationStopReached && lockMovementAfterStationStop)
+        {
+            currentInput = 0f;
+            currentSpeed = 0f;
+            currentTargetSpeed = 0f;
+            return;
+        }
+
         if (emergencyBraking)
         {
             UpdateEmergencyBrake();
@@ -129,11 +153,14 @@ public class HyperloopJoystickController : MonoBehaviour
             * currentSpeed
             * Time.deltaTime;
 
-        MoveHyperloop(movement);
+        MoveHyperloopOrStopAtStation(movement);
     }
 
     public void PowerButtonPressed()
     {
+        if (stationStopReached && lockMovementAfterStationStop)
+            return;
+
         if (emergencyBraking)
             return;
 
@@ -187,7 +214,7 @@ public class HyperloopJoystickController : MonoBehaviour
                 * currentSpeed
                 * Time.deltaTime;
 
-            MoveHyperloop(movement);
+            MoveHyperloopOrStopAtStation(movement);
         }
 
         if (t >= 1f)
@@ -210,6 +237,8 @@ public class HyperloopJoystickController : MonoBehaviour
 
         currentSpeed = 0f;
         currentTargetSpeed = 0f;
+
+        stationStopReached = false;
 
         SetCountdownLights(false, false, false);
     }
@@ -307,14 +336,11 @@ public class HyperloopJoystickController : MonoBehaviour
             * currentSpeed
             * Time.deltaTime;
 
-        MoveHyperloop(movement);
+        MoveHyperloopOrStopAtStation(movement);
     }
 
     private void HandleCruiseControlButton()
     {
-        if (boostModeActive)
-            return;
-
         bool cruiseButtonPressed = joystick.buttonPressed;
 
         if (cruiseButtonPressed && !wasCruiseButtonPressed)
@@ -335,6 +361,114 @@ public class HyperloopJoystickController : MonoBehaviour
         }
 
         wasCruiseButtonPressed = cruiseButtonPressed;
+    }
+
+    private void MoveHyperloopOrStopAtStation(Vector3 movement)
+    {
+        if (ShouldStopAtStation(movement, out Vector3 movementUntilStop))
+        {
+            if (movementUntilStop.sqrMagnitude > 0.0000001f)
+                MoveHyperloop(movementUntilStop);
+
+            CompleteStationStop();
+            return;
+        }
+
+        MoveHyperloop(movement);
+    }
+
+    private bool ShouldStopAtStation(Vector3 plannedMovement, out Vector3 movementUntilStop)
+    {
+        movementUntilStop = plannedMovement;
+
+        if (!stationAutoStopEnabled)
+            return false;
+
+        if (stationStopTarget == null)
+            return false;
+
+        if (stationStopReached)
+            return false;
+
+        Vector3 currentPosition = transform.position;
+        Vector3 targetPosition = stationStopTarget.position;
+
+        distanceToStationStopTarget = Vector3.Distance(currentPosition, targetPosition);
+
+        if (distanceToStationStopTarget <= stationStopRadius)
+        {
+            movementUntilStop = snapToStationStopTarget
+                ? targetPosition - currentPosition
+                : Vector3.zero;
+
+            return true;
+        }
+
+        if (plannedMovement.sqrMagnitude <= 0.0000001f)
+            return false;
+
+        Vector3 movementDirection = plannedMovement.normalized;
+        float movementDistance = plannedMovement.magnitude;
+
+        Vector3 toTarget = targetPosition - currentPosition;
+
+        float distanceAlongMovement = Vector3.Dot(toTarget, movementDirection);
+
+        if (distanceAlongMovement < -stationStopRadius)
+            return false;
+
+        if (distanceAlongMovement > movementDistance + stationStopRadius)
+            return false;
+
+        Vector3 closestPointOnThisFrame =
+            currentPosition +
+            movementDirection * Mathf.Clamp(distanceAlongMovement, 0f, movementDistance);
+
+        float closestDistanceToTarget =
+            Vector3.Distance(closestPointOnThisFrame, targetPosition);
+
+        if (closestDistanceToTarget > stationStopRadius)
+            return false;
+
+        if (snapToStationStopTarget)
+        {
+            movementUntilStop = targetPosition - currentPosition;
+        }
+        else
+        {
+            float stopDistance = Mathf.Clamp(distanceAlongMovement, 0f, movementDistance);
+            movementUntilStop = movementDirection * stopDistance;
+        }
+
+        return true;
+    }
+
+    private void CompleteStationStop()
+    {
+        currentSpeed = 0f;
+        currentInput = 0f;
+        currentTargetSpeed = 0f;
+
+        boostModeActive = false;
+        waitingForJoystickForward = false;
+        boostLaunchConfirmed = false;
+        forwardHoldTimer = 0f;
+
+        cruiseControlEnabled = false;
+        cruiseSpeed = 0f;
+
+        emergencyBraking = false;
+        emergencyBrakeTimer = 0f;
+        emergencyBrakeStartSpeed = 0f;
+
+        stationStopReached = true;
+
+        SetCountdownLights(false, false, false);
+    }
+
+    public void ResetStationStop()
+    {
+        stationStopReached = false;
     }
 
     private void MoveHyperloop(Vector3 movement)
