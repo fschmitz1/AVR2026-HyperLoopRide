@@ -175,12 +175,27 @@ public class HyperloopJoystickController : MonoBehaviour
 
         if (boostModeActive)
         {
-            if (Mathf.Abs(currentSpeed) > 0.01f)
+            // Wenn Boost bereits gestartet ist und der Hyperloop fährt:
+            // Klick = Tempomat an/aus
+            if (boostLaunchConfirmed && Mathf.Abs(currentSpeed) > minCruiseSpeed)
             {
-                StartEmergencyBrake();
+                if (!cruiseControlEnabled)
+                {
+                    cruiseSpeed = currentSpeed;
+                    cruiseControlEnabled = true;
+                    currentTargetSpeed = cruiseSpeed;
+                }
+                else
+                {
+                    cruiseControlEnabled = false;
+                    cruiseSpeed = 0f;
+                }
+
                 return;
             }
 
+            // Wenn Boostmodus aktiv ist, aber noch nicht gestartet wurde:
+            // Knopf deaktiviert den Boostmodus wieder.
             DeactivateBoostMode();
             return;
         }
