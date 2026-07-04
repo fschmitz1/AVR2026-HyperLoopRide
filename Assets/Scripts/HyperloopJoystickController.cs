@@ -38,6 +38,13 @@ public class HyperloopJoystickController : MonoBehaviour
     public GameObject countdownLight2;
     public GameObject countdownLight3;
 
+    [Header("Boost Countdown Audio")]
+    public AudioSource countdownAudioSource;
+    public AudioClip countdownNegativeSound1;
+    public AudioClip countdownNegativeSound2;
+    public AudioClip countdownPositiveSound;
+    public float countdownSoundVolume = 1f;
+
     [Header("Cruise Control")]
     public bool cruiseControlEnabled;
     public float cruiseSpeed;
@@ -76,10 +83,12 @@ public class HyperloopJoystickController : MonoBehaviour
     public float distanceToStationStopTarget;
 
     private bool wasCruiseButtonPressed;
+    private int lastCountdownSoundStep;
 
     private void Start()
     {
         SetCountdownLights(false, false, false);
+        lastCountdownSoundStep = 0;
     }
 
     private void LateUpdate()
@@ -166,12 +175,27 @@ public class HyperloopJoystickController : MonoBehaviour
 
         if (boostModeActive)
         {
-            if (Mathf.Abs(currentSpeed) > 0.01f)
+            // Wenn Boost bereits gestartet ist und der Hyperloop fährt:
+            // Klick = Tempomat an/aus
+            if (boostLaunchConfirmed && Mathf.Abs(currentSpeed) > minCruiseSpeed)
             {
-                StartEmergencyBrake();
+                if (!cruiseControlEnabled)
+                {
+                    cruiseSpeed = currentSpeed;
+                    cruiseControlEnabled = true;
+                    currentTargetSpeed = cruiseSpeed;
+                }
+                else
+                {
+                    cruiseControlEnabled = false;
+                    cruiseSpeed = 0f;
+                }
+
                 return;
             }
 
+            // Wenn Boostmodus aktiv ist, aber noch nicht gestartet wurde:
+            // Knopf deaktiviert den Boostmodus wieder.
             DeactivateBoostMode();
             return;
         }
@@ -193,6 +217,8 @@ public class HyperloopJoystickController : MonoBehaviour
         cruiseControlEnabled = false;
         cruiseSpeed = 0f;
         currentTargetSpeed = 0f;
+
+        lastCountdownSoundStep = 0;
 
         SetCountdownLights(false, false, false);
     }
@@ -239,6 +265,7 @@ public class HyperloopJoystickController : MonoBehaviour
         currentTargetSpeed = 0f;
 
         stationStopReached = false;
+        lastCountdownSoundStep = 0;
 
         SetCountdownLights(false, false, false);
     }
@@ -262,6 +289,8 @@ public class HyperloopJoystickController : MonoBehaviour
         cruiseControlEnabled = false;
         cruiseSpeed = 0f;
 
+        lastCountdownSoundStep = 0;
+
         SetCountdownLights(false, false, false);
     }
 
@@ -282,6 +311,7 @@ public class HyperloopJoystickController : MonoBehaviour
         else
         {
             forwardHoldTimer = 0f;
+            lastCountdownSoundStep = 0;
         }
     }
 
@@ -290,20 +320,63 @@ public class HyperloopJoystickController : MonoBehaviour
         if (!boostModeActive)
         {
             SetCountdownLights(false, false, false);
+            lastCountdownSoundStep = 0;
             return;
         }
 
         if (boostLaunchConfirmed)
         {
             SetCountdownLights(false, false, true);
+            PlayCountdownSoundStepIfNeeded(3);
             return;
         }
 
-        bool light1On = forwardHoldTimer >= 1f;
-        bool light2On = forwardHoldTimer >= 2f;
-        bool light3On = forwardHoldTimer >= 3f;
+        int currentStep = 0;
+
+        if (forwardHoldTimer >= 1f)
+            currentStep = 1;
+
+        if (forwardHoldTimer >= 2f)
+            currentStep = 2;
+
+        if (forwardHoldTimer >= 3f)
+            currentStep = 3;
+
+        bool light1On = currentStep >= 1;
+        bool light2On = currentStep >= 2;
+        bool light3On = currentStep >= 3;
 
         SetCountdownLights(light1On, light2On, light3On);
+
+        if (currentStep < lastCountdownSoundStep)
+            lastCountdownSoundStep = currentStep;
+
+        PlayCountdownSoundStepIfNeeded(currentStep);
+    }
+
+    private void PlayCountdownSoundStepIfNeeded(int step)
+    {
+        if (step <= 0)
+            return;
+
+        if (step <= lastCountdownSoundStep)
+            return;
+
+        lastCountdownSoundStep = step;
+
+        AudioClip clipToPlay = null;
+
+        if (step == 1)
+            clipToPlay = countdownNegativeSound1;
+        else if (step == 2)
+            clipToPlay = countdownNegativeSound2;
+        else if (step == 3)
+            clipToPlay = countdownPositiveSound;
+
+        if (countdownAudioSource != null && clipToPlay != null)
+        {
+            countdownAudioSource.PlayOneShot(clipToPlay, countdownSoundVolume);
+        }
     }
 
     private void SetCountdownLights(bool light1, bool light2, bool light3)
@@ -462,6 +535,7 @@ public class HyperloopJoystickController : MonoBehaviour
         emergencyBrakeStartSpeed = 0f;
 
         stationStopReached = true;
+        lastCountdownSoundStep = 0;
 
         SetCountdownLights(false, false, false);
     }
